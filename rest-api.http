@@ -1,0 +1,40 @@
+### 发送消息1
+POST http://localhost:8080/producer
+Content-Type: application/json
+
+{
+    "topic": "test",
+    "body": "hello"
+}
+
+### 发送消息2
+
+POST http://localhost:8080/producer
+Content-Type: application/json
+
+{
+    "topic": "test",
+    "body": "hello1"
+}
+
+### 获取偏移量
+GET http://localhost:8080/offset?topic=test&group=test
+
+
+### 获取消息
+GET http://localhost:8080/consumer?topic=test&offset=0
+
+
+### 确认消费
+POST http://localhost:8080/confirm
+Content-Type: application/json
+
+{
+    "topic": "test",
+    "group": "test",
+    "offset": 1
+}
+
+###
+
+
