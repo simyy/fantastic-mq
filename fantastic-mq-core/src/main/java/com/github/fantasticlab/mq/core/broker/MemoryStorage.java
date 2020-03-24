@@ -32,7 +32,7 @@ public class MemoryStorage implements Storage {
     @Override
     public Message get(int offset) {
         if (offset < 0 || offset > array.size()) {
-            throw new StorageException("Offset < 0 or Offset > max length");
+            throw new StorageException("Position < 0 or Position > max length");
         }
         String jsonVal = array.get(offset);
         ObjectMapper mapper = new ObjectMapper();

@@ -2,12 +2,18 @@ package com.github.fantasticlab.mq.core.broker;
 
 import com.github.fantasticlab.mq.core.common.Message;
 
+import java.util.List;
+
 public interface Persistence {
 
-    boolean writeMsg(Message msg);
+    Position writeMsg(Message msg);
 
-    boolean writeMsg2Disk(Message msg);
+    Position writeMsg2Disk(Message msg);
 
-    boolean flushDisk(int millseconds);
+    boolean flushDisk(int milliseconds);
+
+    Message loadMsg(Position position);
+
+    List<Message> loadMsg(List<Position> positions);
 
 }

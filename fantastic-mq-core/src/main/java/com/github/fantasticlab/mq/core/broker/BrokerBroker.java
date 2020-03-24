@@ -36,7 +36,7 @@ public class BrokerBroker implements Broker {
     @Override
     public Message pop(String topic, int offset) {
         if (topic == null || offset < 0) {
-            throw new BrokerException("Topic is null or Offset < 0");
+            throw new BrokerException("Topic is null or Position < 0");
         }
         if (!topics.contains(topic)) {
             log.info("Broker POP NULL [No ProducerClient Pushed]");
@@ -49,7 +49,7 @@ public class BrokerBroker implements Broker {
     @Override
     public boolean confirm(String topic, String group, int offset) {
         if (topic == null || group == null || offset < 0) {
-            throw new BrokerException("Topic is null or Group is null or Offset < 0");
+            throw new BrokerException("Topic is null or Group is null or Position < 0");
         }
         return topicQueueMap.get(topic).confirm(group, offset);
     }
@@ -70,7 +70,7 @@ public class BrokerBroker implements Broker {
     @Override
     public boolean refresh(String topic, String group, int offset) {
         if (topic == null || group == null || offset < 0) {
-            throw new BrokerException("Topic is null or Group is null or Offset < 0");
+            throw new BrokerException("Topic is null or Group is null or Position < 0");
         }
         if (!topics.contains(topic)) {
             log.info("Broker POP NULL [No ProducerClient Pushed]");

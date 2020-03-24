@@ -18,11 +18,11 @@ Content-Type: application/json
 }
 
 ### 获取偏移量
-GET http://localhost:8080/offset?topic=test&group=test
+GET http://localhost:8080/position?topic=test&group=test
 
 
 ### 获取消息
-GET http://localhost:8080/consumer?topic=test&offset=0
+GET http://localhost:8080/consumer?topic=test&position=0
 
 
 ### 确认消费
@@ -32,7 +32,7 @@ Content-Type: application/json
 {
     "topic": "test",
     "group": "test",
-    "offset": 1
+    "position": 1
 }
 
 ###
