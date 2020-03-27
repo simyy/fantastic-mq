@@ -24,41 +24,44 @@ public class BrokerApi {
     }
 
     @GetMapping("/consumer")
-    public ApiResult<Message> consumer(@RequestParam String topic,
+    public ApiResult<Message> consumer(@RequestParam(required = false) String key,
+                                       @RequestParam String topic,
                                        @RequestParam int offset) {
-        log.info("/consumer\ttopic={}\toffset={}", topic, offset);
-        Message msg = brokerServer.pop(topic, offset);
+        log.info("/consumer\tkey={}\ttopic={}\toffset={}", key, topic, offset);
+        Message msg = brokerServer.pop(key, topic, offset);
         return new ApiResult(msg);
     }
 
     @GetMapping("/offset")
-    public ApiResult<Integer> offset(@RequestParam String topic,
+    public ApiResult<Integer> offset(@RequestParam(required = false) String key,
+                                     @RequestParam String topic,
                                      @RequestParam String group) {
-        log.info("/offset\ttopic={}\tgroup={}", topic, group);
-        int offset = brokerServer.offset(topic, group);
+        log.info("/offset\tkey={}\ttopic={}\tgroup={}", key, topic, group);
+        int offset = brokerServer.offset(key, topic, group);
         return new ApiResult(offset);
     }
 
     @PostMapping("/confirm")
     public ApiResult<Void> confirm(@RequestBody ConfirmR confirmR) {
-        log.info("/confirm\t{}\t{}\t{}",
+        log.info("/confirm\tkey={}\ttopic={}\tgroup={}\toffset={}", confirmR.getKey(),
                 confirmR.getTopic(), confirmR.getGroup(), confirmR.getOffset());
-        boolean rs = brokerServer.confirm(
+        boolean rs = brokerServer.confirm(confirmR.getKey(),
                 confirmR.getTopic(), confirmR.getGroup(), confirmR.getOffset());
         return new ApiResult(rs);
     }
 
     @PostMapping("/refresh")
     public ApiResult<Void> refresh(@RequestBody RefreshR refreshR) {
-        log.info("/refresh\t{}\t{}\t{}",
+        log.info("/refresh\tkey={}\ttopic={}\tgroup={}\toffset={}", refreshR.getKey(),
                 refreshR.getTopic(), refreshR.getGroup(), refreshR.getOffset());
-        boolean rs = brokerServer.refresh(
+        boolean rs = brokerServer.refresh(refreshR.getKey(),
                 refreshR.getTopic(), refreshR.getGroup(), refreshR.getOffset());
         return new ApiResult(rs);
     }
 
     @Data
     static class RefreshR implements Serializable {
+        private String key;
         private String topic;
         private String group;
         private int offset;
@@ -66,6 +69,7 @@ public class BrokerApi {
 
     @Data
     static class ConfirmR implements Serializable {
+        private String key;
         private String topic;
         private String group;
         private int offset;

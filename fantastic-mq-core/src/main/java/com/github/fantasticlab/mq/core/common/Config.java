@@ -1,37 +1,36 @@
 package com.github.fantasticlab.mq.core.common;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Config implements Serializable {
 
-    private List<TopicConfig> topicConfigs = new ArrayList<>();
+    private Map<String, Topic> topicMap;
 
-    public void add(TopicConfig topicConfig) {
-        topicConfigs.add(topicConfig);
+    public Config() {
+        topicMap = new HashMap<>();
     }
 
-    public TopicConfig getTopic(String topic) {
-        for (TopicConfig topicConfig : topicConfigs) {
-            if (topicConfig.getName().equals(topic)) {
-                return topicConfig;
-            }
+    public void add(String topic, int queues) {
+        if (!topicMap.containsKey(topic)) {
+            topicMap.put(topic, new Topic(topic, queues));
         }
-        return null;
     }
 
-    @Data
-    public static class TopicConfig {
+    public Topic get(String topic) {
+        return topicMap.get(topic);
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class Topic {
         private String name;
-        private QueueConfig queueConfig;
-    }
-
-    @Data
-    public static class QueueConfig {
-        private int quantity = 1;
+        private int queues;
     }
 
 }

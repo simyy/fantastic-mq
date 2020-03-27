@@ -14,24 +14,14 @@ import java.util.Map;
 @Service
 public class BrokerServer implements Broker {
 
-    // 配置
-    private static Config config = new Config();
+    private Config config = new Config();
 
-    static {
-
-        Config.QueueConfig queueConfig = new Config.QueueConfig();
-        queueConfig.setQuantity(1);
-        Config.TopicConfig topicConfig = new Config.TopicConfig();
-        topicConfig.setName("test");
-        topicConfig.setQueueConfig(queueConfig);
-        config.add(topicConfig);
-    }
-
-    /* 主题及其队列(包括分组/偏移量) */
     private List<String> topics = new ArrayList<>();
-    private Map<String, Map<Integer, TopicQueue>> topicQueueMap = new HashMap<>();
 
-    private Router router = new RouterImpl();
+    // {'topic1': [TopicQueue1, TopicQueue2]}
+    private Map<String, List<TopicQueue>> topicQueueMapping = new HashMap<>();
+
+    private Router router = new RouterImpl(config);
 
     @Override
     public boolean push(Message msg) {
@@ -39,45 +29,39 @@ public class BrokerServer implements Broker {
             throw new BrokerException("The received msg or topic or body is null");
         }
         String topic = msg.getTopic();
-        int routeKey = router.groupBy(msg.getKey(), config.getTopic(topic).getQueueConfig().getQuantity());
         if (!topics.contains(topic)) {
-            initTopicQueue(topic, routeKey);
+            // Init A Default Topic Queue If not exist.
+            log.info("Broker New Topic [{}]", topic);
+            topics.add(topic);
+            config.add(topic, 2);
+            List<TopicQueue> queues = new ArrayList<>();
+            queues.add(new TopicQueueImpl(new MemoryStorage()));
+            queues.add(new TopicQueueImpl(new MemoryStorage()));
+            topicQueueMapping.put(topic, queues);
         }
-        TopicQueue topicQueue = topicQueueMap.get(topic).get(routeKey);
-        return topicQueue.push(msg);
-    }
-
-    private void initTopicQueue(String topic, Integer routeKey) {
-        log.info("Broker New Topic [{}]", topic);
-        topics.add(topic);
-        Map<Integer, TopicQueue> queueMap = new HashMap<>();
-        queueMap.put(routeKey, new TopicQueueImpl(new MemoryStorage()));
-        topicQueueMap.put(topic, queueMap);
+        return topicQueueMapping
+                .get(topic)
+                .get(router.getRouteKey(msg))
+                .push(msg);
     }
 
     @Override
-    public Message pop(String topic, int offset) {
+    public Message pop(String key, String topic, int offset) {
         if (topic == null || offset < 0) {
-            throw new BrokerException("Topic is null or Position < 0");
+            throw new BrokerException("Topic is null or Offset < 0");
         }
         if (!topics.contains(topic)) {
             log.info("Broker POP NULL [No ProducerClient Pushed]");
             return null;
         }
-        TopicQueue topicQueue = topicQueueMap.get(topic).get(0);
-        return topicQueue.pop(offset);
+        return topicQueueMapping
+                .get(topic)
+                .get(router.getRouteKey(key, topic))
+                .pop(offset);
     }
 
     @Override
-    public boolean confirm(String topic, String group, int offset) {
-        if (topic == null || group == null || offset < 0) {
-            throw new BrokerException("Topic is null or Group is null or Position < 0");
-        }
-        return topicQueueMap.get(topic).confirm(group, offset);
-    }
-
-    @Override
-    public int offset(String topic, String group) {
+    public int offset(String key, String topic, String group) {
         if (topic == null || group == null) {
             throw new BrokerException("Topic is null or Group is null");
         }
@@ -85,12 +69,25 @@ public class BrokerServer implements Broker {
             log.info("Broker POP NULL [No ProducerClient Pushed]");
             return 0;
         }
-        TopicQueue topicQueue = topicQueueMap.get(topic);
-        return topicQueue.offset(group);
+        return topicQueueMapping
+                .get(topic)
+                .get(router.getRouteKey(key, topic))
+                .offset(group);
     }
 
     @Override
-    public boolean refresh(String topic, String group, int offset) {
+    public boolean confirm(String key, String topic, String group, int offset) {
+        if (topic == null || group == null || offset < 0) {
+            throw new BrokerException("Topic is null or Group is null or Offset < 0");
+        }
+        return topicQueueMapping
+                .get(topic)
+                .get(router.getRouteKey(key, topic))
+                .confirm(group, offset);
+    }
+
+    @Override
+    public boolean refresh(String key, String topic, String group, int offset) {
         if (topic == null || group == null || offset < 0) {
             throw new BrokerException("Topic is null or Group is null or Position < 0");
         }
@@ -98,8 +95,10 @@ public class BrokerServer implements Broker {
             log.info("Broker POP NULL [No ProducerClient Pushed]");
             return false;
         }
-        TopicQueue topicQueue = topicQueueMap.get(topic);
-        return topicQueue.refresh(group, offset);
+        return topicQueueMapping
+                .get(topic)
+                .get(router.getRouteKey(key, topic))
+                .refresh(group, offset);
     }
     
 }

@@ -6,12 +6,12 @@ public interface Broker {
 
     boolean push(Message msg);
 
-    Message pop(String topic, int offset);
-    
-    int offset(String topic, String group);
+    Message pop(String key, String topic, int offset);
 
-    boolean confirm(String topic, String group, int offset);
+    int offset(String key, String topic, String group);
 
-    boolean refresh(String topic, String group, int offset);
+    boolean confirm(String key, String topic, String group, int offset);
+
+    boolean refresh(String key, String topic, String group, int offset);
 
 }
