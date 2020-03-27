@@ -7,7 +7,7 @@ public interface Broker {
     boolean push(Message msg);
 
     Message pop(String topic, int offset);
-
+    
     int offset(String topic, String group);
 
     boolean confirm(String topic, String group, int offset);

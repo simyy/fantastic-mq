@@ -14,7 +14,7 @@ import java.io.Serializable;
 public class BrokerApi {
 
     @Autowired
-    private BrokerBroker brokerServer;
+    private BrokerServer brokerServer;
 
     @PostMapping("/producer")
     public ApiResult<Void> producer(@RequestBody Message msg) {

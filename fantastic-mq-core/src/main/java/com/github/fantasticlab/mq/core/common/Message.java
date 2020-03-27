@@ -6,6 +6,8 @@ import java.io.Serializable;
 
 @Data
 public class Message implements Serializable {
+    // 路由key
+    private String key;
     // 消息主题
     private String topic;
     // 消息体
