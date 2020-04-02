@@ -24,7 +24,7 @@ public class TopicGroupImpl implements TopicGroup {
 
     private final Long OFFSET_EXPIRE = 10000l; // 10s
 
-    // 并发
+    // 死信队列（并发）
     private Map<Integer, Long> offsetExpireMap = new ConcurrentHashMap<>();
 
     private boolean isExpired(Long timestamp) {
