@@ -1,14 +1,3 @@
-## Fantastic-MQ
-
-[![Build Status](https://travis-ci.org/fantasticlab/fantastic-mq.svg?branch=master)](https://travis-ci.org/fantasticlab/fantastic-mq)
-![JDK](https://img.shields.io/badge/jdk-openjdk8-9cf)
-![GitHub](https://img.shields.io/github/license/fantasticlab/fantastic-mq)
-
-`Fantastic-MQ` is a MQ framework based on Java.
-
-### License
-
-```
 MIT License
 
 Copyright (c) 2019 Fantastic Lab
@@ -30,4 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-```
