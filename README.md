@@ -4,7 +4,68 @@
 ![JDK](https://img.shields.io/badge/jdk-openjdk8-9cf)
 ![GitHub](https://img.shields.io/github/license/fantasticlab/fantastic-mq)
 
-`Fantastic-MQ` is a MQ framework based on Java.
+`Fantastic-MQ` is a simple MQ framework based on Java.
+
+### Architecture
+
+![Architecture](/architecture.png)
+
+**Broker**
+
+`Broker` is the transfer station of message.
+
+In Broker, `Router` is used for order consume, which is implemented used by a field named `key` in message. 
+
+```
+{
+    "key": "2",
+    "topic": "test",
+    "body": "hello1"
+}
+```
+
+**Group**
+
+`Group` is used for isolation of consumers.
+
+The differ from groups in a topic is `Offset`, which is the progress of consumer.
+
+**Offset**
+
+Every group maintain a offset in a `Topic` of `Broker`.
+
+For exception situation, Fantastic-MQ use a dead letter queue(死信队列) to record the offset of pulled.
+
+And, there is a default timeout for the message in dead letter queue.
+
+**Consumer**
+
+For consumer, it must pull the offset of message forwardly from `Broker`.
+
+> Push mode will effect the performance of Broker, it is not recommended.
+
+**Persistence**
+
+Fantastic-MQ provide two model for persistence of message.
+
+The first model is `Memory Storage Model`, which use a CopyOnWriteArrayList for persistence.
+
+The second model is `File Storage Model`, which use file system for persistence.
+
+The message frame in Persistence use `JSON`, and store messages in a file named `db.data`, such as
+
+```
+{"key":null,"topic":"topic1","body":"body1"}{"key":null,"topic":"topic2","body":"body2"}
+```
+
+The latest offset in `File Storage Model` is stored in a file named `db.offset`.
+
+
+> For performance, Fantastic-MQ implemented Sequential Write.
+
+#### Todo
+
+`position.index` is a index file for offset, and a position contains `offset` and `length`.
 
 ### License
 
