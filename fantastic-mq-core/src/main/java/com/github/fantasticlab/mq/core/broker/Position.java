@@ -9,4 +9,8 @@ public class Position implements Serializable {
     private long offset;
     private long length;
 
+    public Position(long offset, long length) {
+        this.offset = offset;
+        this.length = length;
+    }
 }

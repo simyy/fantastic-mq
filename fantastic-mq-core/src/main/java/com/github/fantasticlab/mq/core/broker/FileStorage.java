@@ -8,8 +8,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.TreeMap;
@@ -26,13 +26,10 @@ public class FileStorage implements Persistence {
 
     private FileChannel dbChannel;
     private FileChannel indexChannel;
-    private FileChannel latestOffsetChannel;
-    private long nextOffsetOfData;
-    private long nextOffsetOfIndex;
-
-    private TreeMap index = new TreeMap();
-
-
+    private FileChannel offsetChannel;
+    private long nextOffsetOfData = 0;
+    private long nextOffsetOfIndex = 0;
+    private TreeMap<Long, Position> index = null;
 
     public FileStorage(String topic, int queue) {
         this.topic = topic;
@@ -40,38 +37,49 @@ public class FileStorage implements Persistence {
         try {
             this.dbChannel = new RandomAccessFile(new File(topic + "-" + queue + "-" + DB_DATA), "rwd").getChannel();
             this.indexChannel = new RandomAccessFile(new File(topic + "-" + queue + "-" + DB_INDEX), "rwd").getChannel();
-            this.latestOffsetChannel = new RandomAccessFile(new File(topic + "-" + queue  + "-" + DB_OFFSET), "rwd").getChannel();
-            this.nextOffsetOfData = getLatestOffsetOfData();
-            this.nextOffsetOfIndex = getLatestOffsetOfIndex();
+            this.offsetChannel = new RandomAccessFile(new File(topic + "-" + queue  + "-" + DB_OFFSET), "rwd").getChannel();
+            loadFromDisk();
         } catch (FileNotFoundException e) {
             log.error("FileStorage Init DB File error", e);
             throw new StorageException(e);
         }
     }
 
-    private long getLatestOffsetOfData() {
-        ByteBuffer offsetBuffer = ByteBuffer.allocate(Long.BYTES);
-        offsetBuffer.limit();
+    private void loadFromDisk() {
+        loadOffset();
+        loadIndex();
+    }
+
+    private void loadOffset() {
+        ByteBuffer offsetBuffer = ByteBuffer.allocate(Long.BYTES * 2);
+        offsetBuffer.order(ByteOrder.BIG_ENDIAN);
         try {
-            latestOffsetChannel.read(offsetBuffer, 0);
-            return offsetBuffer.getLong();
-        } catch (BufferUnderflowException e) {
-            return 0;
+            offsetChannel.read(offsetBuffer);
+            nextOffsetOfData = offsetBuffer.getLong(0);
+            nextOffsetOfIndex = offsetBuffer.getLong(Long.BYTES);
         } catch (IOException e) {
-            return 0;
+            // ignore
         }
     }
 
-    private long getLatestOffsetOfIndex() {
-        ByteBuffer offsetBuffer = ByteBuffer.allocate(Long.BYTES);
-        offsetBuffer.limit();
+    private void loadIndex() {
+        this.index = new TreeMap();
+        long start = 0;
         try {
-            latestOffsetChannel.read(offsetBuffer, Long.BYTES);
-            return offsetBuffer.getLong();
-        } catch (BufferUnderflowException e) {
-            return 0;
+            ByteBuffer indexBuffer = ByteBuffer.allocate(Long.BYTES * 2);
+            while (true) {
+                int rs = indexChannel.read(indexBuffer, start);
+                if (rs <= 0) {
+                    break;
+                }
+                long offset = indexBuffer.getLong(0);
+                long length = indexBuffer.getLong(Long.BYTES);
+                index.put(offset, new Position(offset, length));
+                start += Long.BYTES * 2;
+                indexBuffer.clear();
+            }
         } catch (IOException e) {
-            return 0;
+            e.printStackTrace();
         }
     }
 
@@ -81,36 +89,38 @@ public class FileStorage implements Persistence {
     }
 
     @Override
-    public Position writeMsg2Disk(Message msg) {
+    synchronized public Position writeMsg2Disk(Message msg) {
         try {
 
+            // Convert Msg to Bytes
             ObjectMapper mapper = new ObjectMapper();
             byte[] bytesOfData = mapper.writeValueAsBytes(msg);
-            long offsetOfData = nextOffsetOfData;
             int lengthOfData = bytesOfData.length;
-            long offsetOfIndex = nextOffsetOfIndex;
 
-            // Write NextOffset Into DB
+            // Reset Offset
+            long offsetOfData = nextOffsetOfData;
+            long offsetOfIndex = nextOffsetOfIndex;
             nextOffsetOfData += lengthOfData;
-            nextOffsetOfIndex +=  Long.BYTES;
+            nextOffsetOfIndex += Long.BYTES * 2;
+
+            Position position = new Position(offsetOfData, lengthOfData);
+
+            // Write Msg
+            this.dbChannel.write(ByteBuffer.wrap((bytesOfData)), offsetOfData);
+
+            // Write Offset
             ByteBuffer offsetBuffer = ByteBuffer.allocate(Long.BYTES * 2);
             offsetBuffer.putLong(nextOffsetOfData);
             offsetBuffer.putLong(Long.BYTES, nextOffsetOfIndex);
-            this.latestOffsetChannel.write(ByteBuffer.wrap(offsetBuffer.array()), 0);
+            this.offsetChannel.write(ByteBuffer.wrap(offsetBuffer.array()), 0);
 
-            // Write Msg Into DB
-            this.dbChannel.write(ByteBuffer.wrap((bytesOfData)), offsetOfData);
-
-            // Write FileIndex Into DB
-            index.put(lengthOfData, lengthOfData);
+            // Write Index
+            index.put(offsetOfData, position);
             ByteBuffer indexBuffer = ByteBuffer.allocate(Long.BYTES * 2);
             indexBuffer.putLong(offsetOfData);
             indexBuffer.putLong(Long.BYTES, lengthOfData);
-            this.indexChannel.write(indexBuffer, offsetOfIndex);
+            this.indexChannel.write(ByteBuffer.wrap(indexBuffer.array()), offsetOfIndex);
 
-            Position position = new Position();
-            position.setOffset(offsetOfData);
-            position.setLength(lengthOfData);
             return position;
         } catch (IOException e) {
             log.error("FileStorage writeMsg2Disk error", e);
@@ -121,30 +131,6 @@ public class FileStorage implements Persistence {
     @Override
     public boolean flushDisk(int milliseconds) {
         return false;
-    }
-
-    @Override
-    public TreeMap loadIndex() {
-        if (index.isEmpty()) {
-            long start = 0;
-            ByteBuffer indexBuffer = ByteBuffer.allocate(Long.BYTES * 2);
-            try {
-                while (true) {
-                    int rs = indexChannel.read(indexBuffer, start);
-                    if (rs == 0) {
-                        break;
-                    }
-                    start += Long.BYTES * 2;
-
-                    long offset = indexBuffer.getLong();
-                    long length = indexBuffer.getLong(Long.BYTES);
-                    index.put(offset, length);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return index;
     }
 
     @Override
@@ -169,44 +155,39 @@ public class FileStorage implements Persistence {
         return null;
     }
 
+    @Override
+    public Position getPosition(Long offset) {
+        return index.get(offset);
+    }
 
-    public static void main(String[] args) {
+    @Override
+    public Long getNextOffset(Long offset) {
+        return offset + index.get(offset).getLength();
+    }
+
+    public static void main(String[] args) throws IOException {
+
+        String topic = "topic1";
+        int queue = 0;
+
         Message msg1 = new Message();
-        msg1.setTopic("topic1");
+        msg1.setTopic(topic);
         msg1.setBody("body1");
 
         Message msg2 = new Message();
-        msg2.setTopic("topic1");
+        msg2.setTopic(topic);
         msg2.setBody("body2");
-//
-//        Message msg3 = new Message();
-//        msg3.setTopic("topic3");
-//        msg3.setBody("body3");
-//
-//        Message msg4 = new Message();
-//        msg4.setTopic("topic4");
-//        msg4.setBody("body4");
 
-        FileStorage fileStorage = new FileStorage("topic1", 0);
+        FileStorage fileStorage = new FileStorage(topic, queue);
         Position position1 = fileStorage.writeMsg2Disk(msg1);
-        Position position2 = fileStorage.writeMsg2Disk(msg2);
-//        Position position3 = fileStorage.writeMsg2Disk(msg3);
-//        Position position4 = fileStorage.writeMsg2Disk(msg4);
+//        Position position2 = fileStorage.writeMsg2Disk(msg2);
 
         Message rs1 = fileStorage.loadMsg(position1);
         System.out.println(rs1);
-        Message rs2 = fileStorage.loadMsg(position2);
-        System.out.println(rs2);
+//        Message rs2 = fileStorage.loadMsg(position2);
+//        System.out.println(rs2);
 
-        TreeMap index = fileStorage.loadIndex();
-        System.out.println(index);
 
-//
-//        Message rs3 = fileStorage.loadMsg(position3);
-//        System.out.println(rs3);
-//
-//        Message rs4 = fileStorage.loadMsg(position4);
-//        System.out.println(rs4);
 
     }
 

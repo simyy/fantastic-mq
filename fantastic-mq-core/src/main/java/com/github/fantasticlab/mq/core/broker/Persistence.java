@@ -14,10 +14,12 @@ public interface Persistence {
 
     boolean flushDisk(int milliseconds);
 
-    TreeMap loadIndex();
-
     Message loadMsg(Position position);
 
     List<Message> loadMsg(List<Position> positions);
+
+    Position getPosition(Long offset);
+
+    Long getNextOffset(Long offset);
 
 }

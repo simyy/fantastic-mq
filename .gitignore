@@ -27,7 +27,8 @@ dist/
 nbdist/
 .nb-gradle/
 
-.data
-.offset
-.index
+*.data
+*.offset
+*.index
+test1
 
