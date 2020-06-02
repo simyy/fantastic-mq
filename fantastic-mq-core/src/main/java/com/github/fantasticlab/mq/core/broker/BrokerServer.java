@@ -35,8 +35,8 @@ public class BrokerServer implements Broker {
             topics.add(topic);
             config.add(topic, 2);
             List<TopicQueue> queues = new ArrayList<>();
-            queues.add(new TopicQueueImpl(new MemoryStorage()));
-            queues.add(new TopicQueueImpl(new MemoryStorage()));
+            queues.add(new TopicQueueImpl(new MemoryStorage(topic, 0)));
+            queues.add(new TopicQueueImpl(new MemoryStorage(topic, 1)));
             topicQueueMapping.put(topic, queues);
         }
         return topicQueueMapping

@@ -12,6 +12,15 @@ public class MemoryStorage implements Storage {
 
     private List<String> array = new CopyOnWriteArrayList<>();
 
+    private String topic;
+
+    private int queue;
+
+    public MemoryStorage(String topic, int queue) {
+        this.topic = topic;
+        this.queue = queue;
+    }
+
     @Override
     public int getMaxOffset() {
         return array.size() - 1;
