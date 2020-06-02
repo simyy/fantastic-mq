@@ -14,7 +14,9 @@
 
 `Broker` is the transfer station of message.
 
-In Broker, `Router` is used for order consume, which is implemented used by a field named `key` in message. 
+To implement order consume, `Topic` contains multi order `Queue`.
+
+Producer use `key` to select `Queue`, such as
 
 ```
 {
@@ -58,14 +60,13 @@ The message frame in Persistence use `JSON`, and store messages in a file named 
 {"key":null,"topic":"topic1","body":"body1"}{"key":null,"topic":"topic2","body":"body2"}
 ```
 
-The latest offset in `File Storage Model` is stored in a file named `db.offset`.
+To find the position of data, it need a `db.index` to avoid the traverse of data.
+
+The latest offset of data and index in `File Storage Model` is stored in a file named `db.offset`.
 
 
 > For performance, Fantastic-MQ implemented Sequential Write.
 
-#### Todo
-
-`position.index` is a index file for offset, and a position contains `offset` and `length`.
 
 ### License
 
