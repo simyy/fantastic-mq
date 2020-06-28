@@ -67,6 +67,11 @@ The latest offset of data and index in `File Storage Model` is stored in a file 
 
 > For performance, Fantastic-MQ implemented Sequential Write.
 
+### TODO
+
+* `sendfile`
+* `replica`
+
 
 ### License
 
