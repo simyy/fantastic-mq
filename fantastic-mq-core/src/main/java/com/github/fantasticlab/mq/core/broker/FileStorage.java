@@ -17,6 +17,7 @@ import java.util.TreeMap;
 @Slf4j
 public class FileStorage implements Persistence {
 
+    private String path;
     private String topic;
     private int queue;
 
@@ -32,18 +33,24 @@ public class FileStorage implements Persistence {
     private TreeMap<Long, Position> index = null;
 
     public FileStorage(String topic, int queue) {
+        this(topic, queue, "");
+    }
+
+    public FileStorage(String topic, int queue, String path) {
+        this.path = path;
         this.topic = topic;
         this.queue = queue;
         try {
-            this.dbChannel = new RandomAccessFile(new File(topic + "-" + queue + "-" + DB_DATA), "rwd").getChannel();
-            this.indexChannel = new RandomAccessFile(new File(topic + "-" + queue + "-" + DB_INDEX), "rwd").getChannel();
-            this.offsetChannel = new RandomAccessFile(new File(topic + "-" + queue  + "-" + DB_OFFSET), "rwd").getChannel();
+            this.dbChannel = new RandomAccessFile(new File(path + topic + "-" + queue + "-" + DB_DATA), "rwd").getChannel();
+            this.indexChannel = new RandomAccessFile(new File(path + topic + "-" + queue + "-" + DB_INDEX), "rwd").getChannel();
+            this.offsetChannel = new RandomAccessFile(new File(path + topic + "-" + queue  + "-" + DB_OFFSET), "rwd").getChannel();
             loadFromDisk();
         } catch (FileNotFoundException e) {
             log.error("FileStorage Init DB File error", e);
             throw new StorageException(e);
         }
     }
+
 
     private void loadFromDisk() {
         loadOffset();
@@ -165,30 +172,21 @@ public class FileStorage implements Persistence {
         return offset + index.get(offset).getLength();
     }
 
-    public static void main(String[] args) throws IOException {
-
-        String topic = "topic1";
-        int queue = 0;
-
-        Message msg1 = new Message();
-        msg1.setTopic(topic);
-        msg1.setBody("body1");
-
-        Message msg2 = new Message();
-        msg2.setTopic(topic);
-        msg2.setBody("body2");
-
-        FileStorage fileStorage = new FileStorage(topic, queue);
-        Position position1 = fileStorage.writeMsg2Disk(msg1);
-//        Position position2 = fileStorage.writeMsg2Disk(msg2);
-
-        Message rs1 = fileStorage.loadMsg(position1);
-        System.out.println(rs1);
-//        Message rs2 = fileStorage.loadMsg(position2);
-//        System.out.println(rs2);
-
-
-
+    @Override
+    public void close() {
+        try {
+            if (dbChannel != null) {
+                dbChannel.close();
+            }
+            if (indexChannel != null) {
+                indexChannel.close();
+            }
+            if (offsetChannel != null) {
+                offsetChannel.close();
+            }
+        } catch (IOException e) {
+            // ignore
+        }
     }
 
 }

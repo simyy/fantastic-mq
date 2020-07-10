@@ -41,7 +41,7 @@ public class HttpClient implements Http {
     private HttpClientBuilder httpClientBuilder;
 
     @Override
-    public <T> ApiResult<T>  doGet(String url, Map<String, Object> params, TypeReference reference) throws HttpException {
+    public <T> ApiResult<T> doGet(String url, Map<String, Object> params, TypeReference reference) throws HttpException {
         try {
 
             URIBuilder uriBuilder = new URIBuilder(url);

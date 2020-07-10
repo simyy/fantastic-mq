@@ -27,7 +27,7 @@ public class MemoryStorage implements Storage {
     }
 
     @Override
-    public boolean add(Message msg) {
+    public boolean write(Message msg) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             String jsonVal = mapper.writeValueAsString(msg);
@@ -39,7 +39,7 @@ public class MemoryStorage implements Storage {
     }
 
     @Override
-    public Message get(int offset) {
+    public Message load(int offset) {
         if (offset < 0 || offset > array.size()) {
             throw new StorageException("Position < 0 or Position > max length");
         }

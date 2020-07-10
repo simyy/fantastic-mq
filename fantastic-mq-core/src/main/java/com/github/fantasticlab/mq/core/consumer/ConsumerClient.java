@@ -67,27 +67,4 @@ public class ConsumerClient implements Consumer {
         return rs.isOK();
     }
 
-    public static void main(String[] args) {
-        Consumer consumer = new ConsumerClient(new HttpClient(), "http://127.0.0.1:8080");
-
-        int offset = consumer.offset("test", "group1");
-        Message msg = consumer.pull("test", offset);
-        assert msg != null;
-        boolean confirm1 = consumer.confirm("test", "group1", offset);
-        assert confirm1;
-
-        int offset2 = consumer.offset("test", "group1");
-        Message msg2 = consumer.pull("test", offset2);
-        assert msg2 != null;
-        boolean confirm2 = consumer.confirm("test", "group1", offset);
-        assert confirm2;
-
-        int offset3 = consumer.offset("test", "group2");
-        Message msg3 = consumer.pull("test", offset3);
-        assert msg3 != null;
-        boolean confirm3 = consumer.confirm("test", "group2", offset3);
-        assert confirm3;
-
-
-    }
 }

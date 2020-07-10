@@ -4,9 +4,9 @@ import com.github.fantasticlab.mq.core.common.Message;
 
 public interface Storage {
 
-    boolean add(Message msg) throws StorageException;
+    boolean write(Message msg) throws StorageException;
 
-    Message get(int offset);
+    Message load(int offset);
 
     int getMaxOffset();
 

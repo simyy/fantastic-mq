@@ -22,4 +22,6 @@ public interface Persistence {
 
     Long getNextOffset(Long offset);
 
+    void close();
+
 }

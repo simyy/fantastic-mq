@@ -22,12 +22,12 @@ public class TopicQueueImpl implements TopicQueue {
     @Override
     public boolean push(Message msg) {
         log.info("TopicQueue PUSH MSG={}", msg);
-        return storage.add(msg);
+        return storage.write(msg);
     }
 
     @Override
     public Message pop(int offset) {
-        Message msg = storage.get(offset);
+        Message msg = storage.load(offset);
         log.info("TopicQueue POP OFFSET={} MSG={}", offset, msg);
         return msg;
     }

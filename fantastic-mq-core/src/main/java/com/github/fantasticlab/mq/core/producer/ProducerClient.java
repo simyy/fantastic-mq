@@ -34,17 +34,4 @@ public class ProducerClient implements Producer {
 
     }
 
-    public static void main(String[] args) {
-
-        Producer producer = new ProducerClient(new HttpClient(), "http://localhost:8080/producer");
-
-        boolean rs1 = producer.send(new Message("test", "hello1"));
-        boolean rs2 = producer.send(new Message("test", "hello2"));
-        boolean rs3 = producer.send(new Message("test", "hello3"));
-
-        assert rs1;
-        assert rs2;
-        assert rs3;
-
-    }
 }
